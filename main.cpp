@@ -4,51 +4,122 @@
 #include "cppDES/des.h"
 #include "crush.hpp"
 
-//using namespace std;
-//#include "tests.h"
-//#include "fileencryption.h"
+const unsigned long ONE = 1;
 
-// void usage()
-// {
-//     cout << "Usage: cppDES -e/-d key [input-file] [output-file]" << endl;
-// }
+static unsigned long x=123456789, y=362436069, z=521288629;
 
-// int main(int argc, char **argv)
-// {
-//     //alltests(); return 0;
+unsigned long fast_random(void) {
+    unsigned long t;
+    x ^= x << 16;
+    x ^= x >> 5;
+    x ^= x << 1;
 
-//     if(argc < 3)
-//     {
-//         usage();
-//         return 1;
-//     }
+    t = x;
+    x = y;
+    y = z;
+    z = t ^ x ^ y;
 
-//     string enc_dec = argv[1];
-//     if(enc_dec != "-e" && enc_dec != "-d")
-//     {
-//         usage();
-//         return 2;
-//     }
+    return z;
+}
 
-//     string input,output;
-//     if(argc > 3)
-//         input  = argv[3];
-//     if(argc > 4)
-//         output = argv[4];
+unsigned long get_nth_bit(unsigned long x, int n) {
+    return (x & (1 << n)) >> n;
+}
 
-//     ui64 key = strtoull(argv[2], nullptr, 16);
-//     FileEncryption fe(key);
+unsigned long effective_bits_equation4_13bits(unsigned long p, unsigned long c) {
+    unsigned long result = 0;
+    result = (get_nth_bit(p, 11) &
+              (get_nth_bit(p, 12) >> 1) &
+              (get_nth_bit(p, 13) >> 2) &
+              (get_nth_bit(p, 14) >> 3) &
+              (get_nth_bit(p, 15) >> 4) &
+              (get_nth_bit(p, 16) >> 5) &
+              (get_nth_bit(c, 0) >> 6) &
+              (get_nth_bit(c, 27) >> 7) &
+              (get_nth_bit(c, 28) >> 8) &
+              (get_nth_bit(c, 29) >> 9) &
+              (get_nth_bit(c, 30) >> 10) &
+              (get_nth_bit(c, 31) >> 11) &
+              ((get_nth_bit(p, 39) ^ 
+                get_nth_bit(p, 50) ^
+                get_nth_bit(p, 56) ^
+                get_nth_bit(c, 47) ^
+                get_nth_bit(c, 7) ^
+                get_nth_bit(c, 18) ^
+                get_nth_bit(c, 24) ^
+                get_nth_bit(c, 28)) >> 12))
 
-//     if(enc_dec == "-e")
-//         return fe.encrypt(input, output);
-//     std::cout << hex << output
-//     if(enc_dec == "-d")
-//         return fe.decrypt(input, output);
+    return result;
+}
 
-//     return 0;
-// }
+unsigned long effective_bits_equation4_12bits(unsigned long k1, unsigned long k16) {
+    unsigned long result = 0;
+    result = (get_nth_bit(k1, 18) &
+              (get_nth_bit(k1, 19) >> 1) &
+              (get_nth_bit(k1, 20) >> 2) &
+              (get_nth_bit(k1, 21) >> 3) &
+              (get_nth_bit(k1, 22) >> 4) &
+              (get_nth_bit(k1, 23) >> 5) &
+              (get_nth_bit(k16, 42) >> 6) &
+              (get_nth_bit(k16, 43) >> 7) &
+              (get_nth_bit(k16, 44) >> 8) &
+              (get_nth_bit(k16, 45) >> 9) &
+              (get_nth_bit(k16, 46) >> 10) &
+              (get_nth_bit(k16, 47) >> 11)) 
+
+    return result;
+}
+
+unsigned long effective_bits_equation5_13bits(unsigned long p, unsigned long c) {
+    return effective_bits_equation4_13bits(c, p);
+}
+
+unsigned long effective_bits_equation5_12bits(unsigned long k1, unsigned long k16) {
+    return effective_bits_equation4_12bits(k16, k1);
+}
+
+unsigned long left_side_of_equation4(unsigned long f1, unsigned long f16, unsigned long t, unsigned long k) {
+    unsigned long result = 0;
+
+    unsigned long result = 0;
+    result = (get_nth_bit(t, 12) ^
+              get_nth_bit(f1, 7) ^ get_nth_bit(f1, 18) ^ get_nth_bit(f1, 24) ^
+              get_nth_bit(f16, 15))
+
+    return result;
+}
+
+unsigned long left_side_of_equation5(unsigned long f1, unsigned long f16, unsigned long t, unsigned long k) {
+    return left_side_of_equation4(f1, f16, k, t);
+}
 
 int main(){
+	int TA[8192], TB[8192];
+    int KA[4096], KB[4096];
+	long count = 0;
+
+    std::cout << (1 << 2);
+
+	for (long i = 0; i < (ONE << 43); ++i) {
+        unsigned long p = fast_random();
+        unsigned long c = DES::encrypt(p);
+
+        TA[effective_bits_equation4_13bits(p, c)]++;
+        TB[effective_bits_equation5_13bits(p, c)]++;
+	}
+
+    for (long k = 0; k < (ONE << 12); ++k) {
+        for (long t = 0; t < (ONE << 13); ++t) {
+            if (left_side_of_equation4(DES::f(p, 1), DES::f(p, 16), t, k) == 0) {
+                KA[k] += TA[t];
+            }
+
+            if (left_side_of_equation5(DES::f(p, 1), DES::f(p, 16), t, k) == 0) {
+                KB[k] += TB[t];
+            }
+        }
+    }
+
 	std::cout << N/2/2 << std::endl;
 	uint64_t key = 0x0000;
 	uint64_t msg = 0x0000;
