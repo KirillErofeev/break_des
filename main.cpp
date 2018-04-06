@@ -64,4 +64,6 @@ int main(){
 	std::cout << std::endl;
 	rearrange(r0.data(), r1.data());
 	print(r1);
+
+        crush(r0.data(), r1.data());
 }

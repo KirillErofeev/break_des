@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iterator>
 #include <tuple>
+#include <functional>
 
 template<class T>
 void print(T a){
@@ -53,26 +54,26 @@ struct{
 } effective;
 
 void rearrange(T* KA, T* KB){
-	std::sort(KA, KA + NUM_KEY_EFFICIENT_BITS, effective);	
+	std::sort(KA, KA + NUM_KEY_EFFICIENT_BITS, effective);
 	std::sort(KB, KB + NUM_KEY_EFFICIENT_BITS, effective);
 }
 
 void crush(T* KA, T* KB){
-	std::vector<std::tuple<_13bit_t, _13bit_t, T>> likely_k26(NUM_KEY_EFFICIENT_BITS*NUM_KEY_EFFICIENT_BITS);
-	for(int i = 0; i < NUM_KEY_EFFICIENT_BITS; ++i)
-		for(int j = 0; j < NUM_KEY_EFFICIENT_BITS; ++j)
-			likely_k26[i*NUM_KEY_EFFICIENT_BITS + j] = make_tuple(i, j, (magnitude(KA[i])+1)*(magnitude(KB[j])+1));
-	
-	struct{
-		bool operator()(std::tuple<_13bit_t, _13bit_t, T> a, std::tuple<_13bit_t, _13bit_t, T> b){
-			return std::get<2>(a) > std::get<2>(b);			
-		}
-	} joint_reliability;
+    using namespace std::placeholders;
+    std::vector<std::tuple<_13bit_t, _13bit_t, T>> likely_k26(NUM_KEY_EFFICIENT_BITS*NUM_KEY_EFFICIENT_BITS);
+    for(int i = 0; i < NUM_KEY_EFFICIENT_BITS; ++i)
+    	for(int j = 0; j < NUM_KEY_EFFICIENT_BITS; ++j)
+    		likely_k26[i*NUM_KEY_EFFICIENT_BITS + j] = make_tuple(i, j, (magnitude(KA[i])+1)*(magnitude(KB[j])+1));
 
-	std::sort(likely_k26.begin(), likely_k26.end(), joint_reliability);
+    struct{
+    	bool operator()(std::tuple<_13bit_t, _13bit_t, T> a, std::tuple<_13bit_t, _13bit_t, T> b){
+    		return std::get<2>(a) > std::get<2>(b);
+    	}
+    } joint_reliability;
 
-	std::cout << std::endl;
-	struct{} get_functor;
-	print(likely_k26, std::get<2, _13bit_t, _13bit_t, T>);
+    std::sort(likely_k26.begin(), likely_k26.end(), joint_reliability);
+
+    std::cout << std::endl;
+    //print(likely_k26, [](std::tuple<_13bit_t, _13bit_t, T> a){ return std::get<2, _13bit_t, _13bit_t, T>(a);});
 }
 
