@@ -7,7 +7,7 @@
 #include "cppDES/des.h"
 #include "crush.hpp"
 #include "measure.hpp"
-#include "../Data-Encryption-Standard/DES.hpp"
+#include "../DES/des.h"
 
 static unsigned long x=123456789, y=362436069, z=521288629;
 
@@ -96,21 +96,23 @@ unsigned long effective_bits_equation5_12bits(unsigned long k1, unsigned long k1
 //    return left_side_of_equation4(f1, f16, k, t);
 //}
 
-uint64_t KEY = 0x0000000000000000;
+uint64_t KEY = 0x00000F00000000000;
 
 void run(uint64_t n){
     int TA[8192], TB[8192];
     int KA[4096], KB[4096];
     long count = 0;
 
-unsigned long p = 0;
-unsigned long c = 0;
+    key_set* key_sets = (key_set*)malloc(17*sizeof(key_set));
+    generate_sub_keys(reinterpret_cast<unsigned char*>(&KEY), key_sets);
 
 #pragma omp parallel for
     for (long i = 0; i < n; ++i) {
         unsigned long p = fast_random();
         unsigned long c = DES::encrypt(p, KEY);
-        //unsigned long c = Cipher(p, KEY);
+
+        ///unsigned long c = 0;
+        ///process_message(reinterpret_cast<unsigned char*>(&p), reinterpret_cast<unsigned char*>(&c), key_sets, ENCRYPTION_MODE);
 
         ++(TA[effective_bits_equation4_13bits(p, c)]);
         ++(TB[effective_bits_equation5_13bits(p, c)]);
@@ -152,5 +154,5 @@ int main(){
     ///crush(r0.data(), r1.data());
 
     std::cout << measure<>::execution(encrypt_wrapper, (uint64_t)0, (uint64_t)0) << std::endl;
-    std::cout << measure<>::execution(run, ONE << 23) << std::endl;
+    std::cout << measure<>::execution(run, ONE << 20) << std::endl;
 }
